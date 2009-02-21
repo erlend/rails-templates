@@ -2,30 +2,14 @@ run "echo TODO > README"
 
 # Gems
 gem "mislav-will_paginate", :lib => "will_paginate", :source => "http://gems.github.com"
-gem "thoughtbot-shoulda", :version => ">= 2.9.1", :lib => "shoulda", :souce => "http://gems.github.com"
-rake "gems:install", :sudo => true
+gem "thoughtbot-shoulda", :lib => "shoulda", :souce => "http://gems.github.com"
+gem "thoughtbot-factory_girl", :lib => "factory_girl", :souce => "http://gems.github.com"
 
-# Hoptoad
-if yes?("Do you want to use Hoptoad?")
-  plugin "hoptoad_notifier", :git => "git://github.com/thoughtbot/hoptoad_notifier.git"
-  initializer "hoptoad.rb",
-  %q{HoptoadNotifier.configure do |config|
-  config.api_key = 'REPLACE_ME'
-end}
-  
-  file "app/controllers/application_controller.rb",
-  %q{class ApplicationController < ActionController::Base
-  include HoptoadNotifier::Catcher
-end}
+if yes?("Install gems?")
+  rake "gems:install", :sudo => true
 end
 
-# Welcome controller
-if yes?("Do you want to generate a welcome controller")
-  generate :controller, "welcome index"
-  route "map.root :controller => 'welcome'"
-  run "rm public/index.html"
-end
-
+# Git stuff
 file ".gitignore",
 %q{.DS_Store
 config/database.yml
@@ -37,7 +21,27 @@ public/*/cache/*}
 
 run "touch {tmp,log,vendor}/.gitignore"
 run "cp config/database.yml config/database_example.yml"
+run "rm public/index.html"
+
+gsub_file 'app/controllers/application_controller.rb', /#\s*(filter_parameter_logging :password)/, '\1'
 
 git :init
 git :add => "."
 git :commit => "-a -m 'initial commit'"
+
+# Plugins
+run "braid add -p git://github.com/ntalbott/query_trace.git"
+
+# Hoptoad
+if yes?("Do you want to use Hoptoad?")
+  run "braid add -p git://github.com/thoughtbot/hoptoad_notifier.git"
+  key = ask("What is the projects API key?")
+  initializer "hoptoad.rb", <<-EOF
+HoptoadNotifier.configure do |config|
+  config.api_key = \"#{key}\"
+end
+EOF
+  
+  gsub_file 'app/controllers/application_controller.rb', /(class ApplicationController.*)/, "\\1\n  include HoptoadNotifier"
+  git :add => ".", :commit => "-m 'configured Hoptoad'"
+end
