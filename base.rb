@@ -31,6 +31,7 @@ git :commit => "-a -m 'initial commit'"
 
 # Plugins
 run "braid add -p git://github.com/ntalbott/query_trace.git"
+run "braid add -p git://github.com/thoughtbot/limerick_rake.git"
 
 # Hoptoad
 if yes?("Do you want to use Hoptoad?")
